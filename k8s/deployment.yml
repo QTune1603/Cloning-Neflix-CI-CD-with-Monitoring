@@ -1,0 +1,22 @@
+apiVersion: apps/v1 #API version of Kubernetes use for Deployment
+kind: Deployment
+metadata: 
+  name: neflix-deployment
+  labels:
+    app: neflix # Labels for project classification
+spec:
+  replicas: 2 # Run two pods in parallel for redundancy and load balancing.
+  selector:
+    matchLabels:
+      app: neflix # Find Pods tagged with app: netflix to manage them.
+  template: # Define type of pod want to create in cluster
+    metadata:
+      labels:
+        app: neflix 
+    spec: 
+      containers:
+      - name: neflix 
+        image: qitune/neflix:latest # Docker image for deployment from Docker Hub
+        ports:
+        - containerPort: 80 # Nginx in container run on port 80
+        imagePullPolicy: Always # Always install latest image whenever restart Pod

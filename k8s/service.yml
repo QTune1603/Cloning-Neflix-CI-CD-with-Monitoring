@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: neflix-Service
+  labels:
+    app: neflix
+spec:
+  type: NodePort # For open port
+  selector:
+    app: neflix # Direct traffic to Pods labeled with the app: Netflix
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30007
