@@ -73,10 +73,11 @@ pipeline {
             }
         }
 
-        stage("Deploy to container") {
+        stage("Deploy to Kubernetes") {
             steps{
-                sh 'docker rm -f neflix-app || true'
-                sh "docker run -d --name neflix-app -p 8081:80 ${DOCKER_IMAGE}:latest"
+                sh "kubectl apply -f k8s/deployment.yml"
+                sh "kubectl apply -f k8s/service.yml"
+                sh "kubectl rollout restart deployment/neflix-deployment"
             }
         }
     }
