@@ -12,7 +12,7 @@ RUN npm run build
 # SERVE STAGE
 FROM nginx:alpine
 
-COPY --from=builder /app/dist /user/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 EXPOSE 80
 

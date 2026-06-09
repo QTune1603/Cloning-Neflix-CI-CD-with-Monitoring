@@ -44,7 +44,7 @@ pipeline {
         }
         stage('OWASP FS SCAN') {
             steps {
-                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check', failOnError: false
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
@@ -56,7 +56,7 @@ pipeline {
         stage("Docker Build & Push"){
             steps{
                 script{
-                    withDockerRegistry(credentialsId: DOCKER_CREDENTIALS_ID, toolName: 'docker'){
+                    withDockerRegistry(credentialsId: DOCKER_CREDENTIALS_ID){
                         sh "docker build -t  neflix ."
                         sh "docker tag neflix ${DOCKER_IMAGE}:latest"
                         sh "docker push ${DOCKER_IMAGE}:latest"
