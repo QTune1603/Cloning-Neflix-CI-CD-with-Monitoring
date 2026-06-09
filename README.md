@@ -321,8 +321,8 @@ Vào **Manage Jenkins** -> **Credentials** -> **System** -> **Global credentials
    * **ID**: `Sonar-token`
 2. **Docker Hub Access Token** *(Tạo Personal Access Token trên Docker Hub trước)*:
    * **Kind**: `Username with password`
-   * **Username**: Nhập Username Docker Hub của bạn (ví dụ `qitune`).
-   * **Password**: Nhập Access Token bạn đã tạo trên Docker Hub.
+   * **Username**: Nhập Username Docker Hub (ví dụ `qitune`).
+   * **Password**: Nhập Access Token đã tạo trên Docker Hub.
    * **ID**: `docker`
 
 #### 7.3. Đăng ký Server SonarQube trong Jenkins System
@@ -454,7 +454,7 @@ pipeline {
 ### Bước 10: Chạy thử và Kiểm tra Kết Quả
 
 1. Lên Jenkins > **New Item** > Đặt tên: `Netflix-DevSecOps` > Chọn **Pipeline**.
-2. Tại phần **Pipeline Definition**, chọn **Pipeline script from SCM** > SCM: **Git** > Điền Git repository URL của bạn.
+2. Tại phần **Pipeline Definition**, chọn **Pipeline script from SCM** > SCM: **Git** > Điền Git repository URL.
 3. Nhấn **Save** và bấm **Build Now**.
 4. Truy cập ứng dụng chạy thực tế trên Kubernetes thông qua cổng NodePort đã cấu hình:
    👉 **`http://<IP_MÁY_CHỦ>:30007`**
@@ -481,7 +481,7 @@ pipeline {
 
 ### 2. Lỗi phiên bản Docker client quá cũ (`API version 1.29 is too old`)
 * **Dấu hiệu:** Stage Docker build & push thất bại ngay tại bước login, báo lỗi API tối thiểu hỗ trợ là 1.44 nhưng client gửi lên chỉ là 1.29.
-* **Nguyên nhân:** Bạn đang khai báo cấu hình cài đặt tự động Docker trong Jenkins Tools (nó tự tải bản client cực kỳ cũ từ get.docker.com).
+* **Nguyên nhân:** Đang khai báo cấu hình cài đặt tự động Docker trong Jenkins Tools (nó tự tải bản client cực kỳ cũ từ get.docker.com).
 * **Cách sửa:** Trong file `Jenkinsfile`, bỏ tham số `toolName: 'docker'` trong lệnh `withDockerRegistry` để bắt Jenkins sử dụng công cụ Docker có sẵn của Host Ubuntu.
 
 ### 3. Lỗi cập nhật cơ sở dữ liệu lỗ hổng bảo mật NVD (lỗi 429) ở OWASP Scan
@@ -490,5 +490,54 @@ pipeline {
 
 ### 4. Lỗi đặt tên Kubernetes Service (`DNS-1035 label must consist of lowercase...`)
 * **Dấu hiệu:** Deploy lên Kubernetes thất bại ở bước `service.yml` với lỗi báo tên Service không hợp lệ.
-* **Nguyên nhân:** Kubernetes quy định tên của các tài nguyên chỉ được phép dùng chữ viết thường, số và dấu gạch ngang `-`. Bạn đặt tên có chữ viết hoa (ví dụ: `neflix-Service`).
+* **Nguyên nhân:** Kubernetes quy định tên của các tài nguyên chỉ được phép dùng chữ viết thường, số và dấu gạch ngang `-`. Đặt tên có chữ viết hoa (ví dụ: `neflix-Service`).
 * **Cách sửa:** Sửa lại file `k8s/service.yml`, đổi tên sang chữ thường hoàn toàn (ví dụ: `neflix-service`).
+
+---
+
+## 🛑 Hướng Dẫn Tạm Dừng & Khởi Động Lại Hệ Thống Để Tránh Mất Phí AWS
+
+Nếu sử dụng AWS free tier thì việc tắt các dịch vụ và máy ảo AWS là cực kỳ quan trọng để bảo toàn tài khoản (đặc biệt khi chạy loại máy ảo lớn như `t2.large` hay `m7i-flex.large` nằm ngoài hạn mức 750h miễn phí của `t2.micro`).
+
+### 1. Lệnh tắt toàn bộ các dịch vụ trên máy ảo (Chạy bằng SSH):
+Chạy các lệnh sau để dừng tất cả các container, cụm K8s, Jenkins và bộ công cụ giám sát:
+
+```bash
+# Dừng container chạy thử và SonarQube
+docker stop neflix-app || true
+docker stop sonar
+
+# Dừng cụm Kubernetes (K3s) (tự động tắt toàn bộ Pods của ứng dụng)
+sudo systemctl stop k3s
+
+# Dừng Jenkins
+sudo systemctl stop jenkins
+
+# Dừng Prometheus, Node Exporter và Grafana
+sudo systemctl stop prometheus
+sudo systemctl stop node_exporter
+sudo systemctl stop grafana-server
+```
+
+Sau khi chạy xong, hãy lên **AWS Console > EC2 > Instances** > Chọn máy ảo `Netflix-DevSecOps` và chọn **Instance state > Stop instance** để dừng tính phí chạy máy ảo.
+
+---
+
+### 2. Lệnh khởi động lại toàn bộ hệ thống để làm tiếp:
+Khi bật lại máy ảo AWS, hãy SSH vào và khởi động lại các dịch vụ bằng các lệnh sau:
+
+```bash
+# Khởi động lại SonarQube
+docker start sonar
+
+# Khởi động lại Kubernetes (K3s) (K8s sẽ tự động kéo lại các Pod ứng dụng lên)
+sudo systemctl start k3s
+
+# Khởi động lại Jenkins
+sudo systemctl start jenkins
+
+# Khởi động lại hệ thống giám sát
+sudo systemctl start prometheus
+sudo systemctl start node_exporter
+sudo systemctl start grafana-server
+```
