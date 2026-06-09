@@ -10,6 +10,7 @@ pipeline {
         SCANNER_HOME = tool 'sonar-scanner'
         DOCKER_IMAGE = 'qitune/neflix'
         DOCKER_CREDENTIALS_ID = 'docker'
+        KUBECONFIG = '/var/lib/jenkins/.kube/config'
     }
 
     stages {
